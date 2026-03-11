@@ -8,3 +8,4 @@ requests
 tldextract
 python-whois
 beautifulsoup4
+plotly
