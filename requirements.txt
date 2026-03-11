@@ -1,0 +1,10 @@
+flask
+streamlit
+pandas
+numpy
+scikit-learn
+joblib
+requests
+tldextract
+python-whois
+beautifulsoup4
