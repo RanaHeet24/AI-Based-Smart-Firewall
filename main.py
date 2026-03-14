@@ -2,13 +2,12 @@ import os
 import subprocess
 import time
 import sys
-import threading
 
-def start_flask_proxy():
-    """Starts the Flask Proxy Server."""
-    print("🚀 Starting AI Smart Firewall Proxy Server on port 5000...")
-    proxy_script = os.path.join("proxy", "proxy_server.py")
-    return subprocess.Popen([sys.executable, proxy_script])
+def start_api_server():
+    """Starts the Flask API Backend Server."""
+    print("🚀 Starting AI Smart Firewall API Server on port 5000...")
+    api_script = os.path.join("api", "server.py")
+    return subprocess.Popen([sys.executable, api_script])
 
 def start_streamlit_dashboard():
     """Starts the Streamlit Dashboard."""
@@ -43,35 +42,35 @@ def main():
 
     # 2. Start Services
     try:
-        # Start Proxy Server
-        proxy_process = start_flask_proxy()
-        
-        # Give it a second to bind
+        # Start API Server (replaces old proxy server)
+        api_process = start_api_server()
+
+        # Give it a moment to bind to the port
         time.sleep(2)
-        
+
         # Start Dashboard
         dashboard_process = start_streamlit_dashboard()
 
         print("\n✅ System is fully operational!")
-        print("👉 Proxy is running at:      http://127.0.0.1:5000")
-        print("👉 Dashboard is running at:  http://localhost:8501\n")
-        print("Test a safe URL: http://127.0.0.1:5000/https://www.google.com")
-        print("Test a bad URL:  http://127.0.0.1:5000/http://suspicious-login-verify.xyz/login\n")
-        print("Press Ctrl+C to stop all services.")
+        print("👉 API Backend is running at:   http://127.0.0.1:5000")
+        print("👉 Dashboard is running at:     http://localhost:8501\n")
+        print("📌 Load the browser extension from the `extension/` folder in Chrome.")
+        print("   Go to: chrome://extensions → Enable Developer Mode → Load Unpacked")
+        print("\nPress Ctrl+C to stop all services.")
 
         # Keep main thread alive
-        proxy_process.wait()
+        api_process.wait()
         dashboard_process.wait()
 
     except KeyboardInterrupt:
         print("\n🛑 Shutting down AI Smart Firewall Services...")
-        proxy_process.terminate()
+        api_process.terminate()
         dashboard_process.terminate()
         print("✅ Shutdown complete.")
         sys.exit(0)
     except Exception as e:
         print(f"\n❌ An error occurred: {e}")
-        if 'proxy_process' in locals(): proxy_process.terminate()
+        if 'api_process' in locals(): api_process.terminate()
         if 'dashboard_process' in locals(): dashboard_process.terminate()
         sys.exit(1)
 

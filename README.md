@@ -1,63 +1,79 @@
 # AI-Based Smart Firewall
 
-A multi-layered AI-powered smart firewall system designed to detect and block phishing, piracy, and other malicious activities in real-time. The system leverages machine learning models to analyze URLs and web content, providing an intelligent proxy server and an interactive monitoring dashboard.
+An AI-powered Smart Firewall with a **browser extension** that automatically intercepts URLs and blocks phishing, malware, and piracy sites in real-time — no proxy configuration required.
 
 ## 🌟 Features
 
-- **AI Proxy Server**: A Flask-based proxy that intercepts and analyzes web traffic.
-- **Real-Time Monitoring Dashboard**: A Streamlit interface to visualize firewall activities, logs, and threat statistics.
-- **Phishing Detection**: Uses a trained machine learning model (`scikit-learn`) to identify malicious URLs.
-- **Piracy Detection**: Dedicated modules to detect piracy-related content.
-- **Multi-Layered Firewall Engine**: Extensible architecture to add more security layers.
+- **Browser Extension**: Automatically intercepts every URL you visit and checks it against the AI engine.
+- **Phishing Detection**: Machine learning model trained to identify malicious URLs.
+- **Piracy Detection**: Dedicated module to detect piracy-related content.
+- **Malware & Content Security**: Scans for fake download buttons, malicious HTML, and drive-by downloads.
+- **Real-Time Dashboard**: Streamlit UI to visualize all firewall events, threat statistics, and decision logs.
+- **Explainable AI (XAI)**: Every block/warn decision is explained with per-layer reasoning.
 
 ## 📂 Project Structure
 
-- `main.py`: The entry point script that starts both the proxy server and the dashboard.
-- `proxy/`: Contains the Flask proxy server implementation.
-- `dashboard/`: Contains the Streamlit monitoring dashboard.
-- `src/`: Source code for the firewall engine, piracy detector, and model training scripts.
-- `models/`: Stores the trained machine learning models (e.g., `phishing_detection_model.pkl`).
-- `data/`: Datasets for training the machine learning models.
-- `logs/`: Directory where the firewall logs its activities.
+```
+ai-smart-firewall/
+├── api/                  # Flask API Backend (talks to the browser extension)
+│   └── server.py
+├── extension/            # Chrome Browser Extension
+│   ├── manifest.json
+│   ├── background.js     # Service worker that intercepts URLs
+│   ├── popup.html        # Extension popup UI
+│   ├── popup.js
+│   └── blocked.html      # Warning page shown on threat detection
+├── dashboard/            # Streamlit Monitoring Dashboard
+│   └── dashboard.py
+├── src/                  # Core AI modules
+│   ├── firewall_engine.py
+│   ├── risk_engine.py
+│   ├── piracy_detector.py
+│   ├── content_analyzer.py
+│   ├── heuristics.py
+│   └── domain_reputation.py
+├── models/               # Trained ML models
+├── data/                 # Datasets
+├── logs/                 # Firewall event logs (read by dashboard)
+├── utils/
+├── requirements.txt
+└── main.py               # Launches API Server + Dashboard together
+```
 
-## 🚀 Installation & Setup
+## 🚀 Getting Started
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/RanaHeet24/AI-Based-Smart-Firewall.git
-   cd AI-Based-Smart-Firewall
-   ```
+### 1. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
 
-2. **Install the dependencies:**
-   Make sure you have Python installed, then run:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-## 💻 Usage
-
-To start the AI Smart Firewall system, simply run the main script:
-
+### 2. Start the Backend
 ```bash
 python main.py
 ```
+This launches:
+- 🔌 **API Server** at `http://127.0.0.1:5000`
+- 📊 **Dashboard** at `http://localhost:8501`
 
-This will launch:
-- 🛡️ **Proxy Server** at `http://127.0.0.1:5000`
-- 📊 **Streamlit Dashboard** at `http://localhost:8501`
+### 3. Install the Browser Extension
 
-### Testing the Proxy
+1. Open **Google Chrome** and go to `chrome://extensions`
+2. Enable **Developer Mode** (toggle in the top-right corner)
+3. Click **"Load unpacked"**
+4. Select the `extension/` folder from this project directory
+5. The 🛡️ AI Smart Firewall icon will appear in your browser toolbar
 
-You can test the proxy by prepending the proxy URL to any website:
-- **Safe URL Test:** `http://127.0.0.1:5000/https://www.google.com`
-- **Bad URL Test:** `http://127.0.0.1:5000/http://suspicious-login-verify.xyz/login`
+### 4. Browse the Web — You're Protected!
 
-Press `Ctrl+C` in the terminal to stop all services.
+The extension will now automatically scan every URL you visit. If a threat is detected:
+- **BLOCK** → You are redirected to a warning page and the site is stopped.
+- **WARN** → An orange `⚠` badge appears on the extension icon.
+- **ALLOW** → The site is safe, you browse normally.
 
 ## 🛠️ Built With
 
-- **Python**
-- **Flask** (Proxy Server)
-- **Streamlit** (Dashboard)
-- **Scikit-learn / Pandas / Numpy** (Machine Learning & Data Processing)
-- **BeautifulSoup4 / Requests** (Web Scraping & API)
+- **Python / Flask** (API Backend)
+- **Scikit-learn / Pandas / Numpy** (Machine Learning)
+- **Streamlit / Plotly** (Dashboard)
+- **Chrome Extension APIs** (Manifest V3, `webNavigation`, `storage`)
+- **BeautifulSoup4 / Requests** (Content Analysis)

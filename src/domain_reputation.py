@@ -1,57 +1,57 @@
-import whois
 import tldextract
-from datetime import datetime
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.logger import setup_logger
 
 logger = setup_logger("DomainReputation", "reputation.log")
 
+# High-risk TLDs that are disproportionately used for phishing/fraud
+HIGH_RISK_TLDS = {
+    'tk', 'ml', 'ga', 'cf', 'gq',   # free Freenom TLDs — massively abused
+    'xyz', 'top', 'click', 'loan',    # statistically suspicious
+    'work', 'vip', 'win', 'racing',
+    'biz',                             # moderate risk
+}
+
 def get_domain_reputation(url: str) -> float:
     """
-    Checks the reputation of a domain using WHOIS age 
-    and suspicious TLD patterns.
-    
-    Returns a risk score between 0.0 (Safe) and 1.0 (High Risk).
+    Returns a domain risk score between 0.0 (Safe) and 1.0 (High Risk).
+    Uses TLD analysis and optional WHOIS age checking.
+    WHOIS failure/unavailability adds NO penalty (many legit domains block WHOIS).
     """
     ext = tldextract.extract(url)
-    domain_name = f"{ext.domain}.{ext.suffix}"
-    
+
     if not ext.domain or not ext.suffix:
-        # IP addresses or malformed domains inherently carry more risk
-        return 0.8
-        
+        # Raw IP address or malformed — high risk
+        return 0.70
+
     risk_score = 0.0
-    
-    # 1. Check suspicious TLDs
-    suspicious_tlds = ['xyz', 'top', 'info', 'tk', 'ml', 'ga', 'cf', 'gq', 'online', 'vip', 'biz']
-    if ext.suffix.lower() in suspicious_tlds:
-        risk_score += 0.4
-        
-    # 2. Check Domain Age
+    suffix_lower = ext.suffix.lower()
+
+    # 1. Suspicious TLD check (primary signal)
+    if suffix_lower in HIGH_RISK_TLDS:
+        risk_score += 0.45
+
+    # 2. Domain Age via WHOIS (optional — failure adds ZERO penalty)
     try:
+        import whois
+        from datetime import datetime
+        domain_name = f"{ext.domain}.{ext.suffix}"
         w = whois.whois(domain_name)
         creation_date = w.creation_date
-        
         if creation_date:
             if isinstance(creation_date, list):
                 creation_date = creation_date[0]
-                
             age_days = (datetime.now() - creation_date).days
-            
-            # Domains newer than 30 days are highly suspicious
-            if age_days < 30:
-                risk_score += 0.5
-            # Domains between 30 and 180 days are moderately suspicious
-            elif age_days < 180:
-                risk_score += 0.2
-        else:
-            # Cannot determine age - adds slight risk
-            risk_score += 0.3
-            
+            if age_days < 7:
+                risk_score += 0.45
+            elif age_days < 30:
+                risk_score += 0.25
+            elif age_days < 90:
+                risk_score += 0.10
+        # If creation_date is None, we simply add nothing
     except Exception as e:
-        logger.debug(f"WHOIS lookup failed for {domain_name}: {e}")
-        # WHOIS strictly rate limits or fails for some ccTLDs. 
-        # Add a baseline risk if we can't verify.
-        risk_score += 0.2
-        
-    # Cap score at 1.0
+        # WHOIS failure is normal for many legitimate domains — no penalty!
+        logger.debug(f"WHOIS unavailable for {ext.domain}.{ext.suffix}: {e}")
+
     return min(1.0, risk_score)

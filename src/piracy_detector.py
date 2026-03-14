@@ -1,88 +1,89 @@
 import requests
 from bs4 import BeautifulSoup
+import sys, os
 from urllib.parse import urlparse
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.logger import setup_logger
 
 logger = setup_logger("PiracyDetector", "piracy_detection.log")
 
+# URL-level piracy signals
+PIRACY_URL_KEYWORDS = [
+    'crack', 'torrent', 'keygen', 'warez', 'repack',
+    'pirate', 'nulled', 'darkwarez', 'cracked',
+    'free-download', 'full-version', 'crack-download',
+    'torrent-download', 'software-repack', 'freemovies',
+    'mod-apk', 'modapk', 'apkpure-cracked', 'unblocked',
+    'watch-free', 'streaming', 'hd-movies', '1080p-download'
+]
+
+# Suspicious file extensions commonly distributed by piracy/malware sites
+SUSPICIOUS_EXTS = ('.exe', '.apk', '.scr', '.bat', '.torrent', '.iso', '.mkv', '.mp4', '.zip', '.rar')
+MAGNET_PREFIX = 'magnet:?xt=urn:'
+MIN_SUSPICIOUS_LINKS = 2
+
 def detect_piracy_and_malware(url: str, html_content: str = None) -> dict:
     """
-    Detects websites that are likely distributing pirated software or malware.
-    Returns a result dict with category, risk_score, and reasons.
+    Detects piracy and malware distribution dynamically based on URL keywords
+    and the presence of suspicious download links in the HTML.
     """
     risk_score = 0.0
     reasons = []
-    
     url_lower = url.lower()
-    
-    # 1. Keyword Pattern Detection
-    piracy_keywords = [
-        'crack', 'torrent', 'repack', 'keygen', 
-        'free download full version', 'mod apk', 'patched', 'warez'
-    ]
-    
-    for kw in piracy_keywords:
-        if kw in url_lower:
-            risk_score += 0.3
-            reasons.append(f"keyword '{kw}' detected")
-            
-    # 2. Piracy Domain Pattern Detection
-    suspicious_domains = [
-        'free-download', 'full-version', 'crack-download',
-        'torrent-download', 'software-repack', 'repack'
-    ]
-    
     parsed_url = urlparse(url_lower)
-    domain = parsed_url.netloc
+
+    # ── 1. URL keyword scan ──
+    # Check both the domain and the path for piracy-related keywords
+    full_path_to_check = parsed_url.netloc + parsed_url.path
+    matched_keywords = [kw for kw in PIRACY_URL_KEYWORDS if kw in full_path_to_check]
     
-    for pattern in suspicious_domains:
-        if pattern in domain:
-            risk_score += 0.4
-            reasons.append(f"suspicious domain pattern '{pattern}' detected")
-            
-    # 3. Executable & Torrent Download Detection
-    suspicious_extensions = ['.exe', '.apk', '.rar', '.zip', '.iso', '.scr', '.torrent']
-    
-    # Fetch HTML if not manually provided
-    if html_content is None:
-        try:
-            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-            response = requests.get(url, headers=headers, timeout=5)
-            if response.status_code == 200:
-                html_content = response.text
-            else:
-                html_content = ""
-        except Exception as e:
-            logger.warning(f"Failed to fetch HTML for {url}: {e}")
-            html_content = ""
-            
+    if matched_keywords:
+        # Each keyword adds 0.25, capped at 0.60 to avoid false positives purely on URL
+        score_add = min(0.60, len(matched_keywords) * 0.25)
+        risk_score += score_add
+        reasons.append(f"Piracy keyword(s) detected: {', '.join(matched_keywords[:3])}")
+
+    # ── 2. HTML deep analysis for actual malicious/piracy links ──
+    # We only analyze if there's already some suspicion or if it's passed from the central engine
     if html_content:
-        soup = BeautifulSoup(html_content, 'html.parser')
-        
-        # Look for executable, torrent, or magnet links
-        exe_found = False
-        links = soup.find_all('a', href=True)
-        for link in links:
-            href = link.get('href', '').lower()
-            if href.startswith('magnet:?xt=urn:') or any(href.endswith(ext) for ext in suspicious_extensions) or any(f"{ext}?" in href for ext in suspicious_extensions):
-                exe_found = True
-                break
-                
-        if exe_found:
-            risk_score += 0.5
-            reasons.append("executable/torrent download detected")
+        try:
+            soup = BeautifulSoup(html_content, 'html.parser')
+            links = soup.find_all(['a', 'button'], href=True)
             
-    # Cap score at 1.0
+            suspicious_links = []
+            for link in links:
+                href = link.get('href', '').lower()
+                text = link.get_text().lower()
+                
+                # Check for magnet links or suspicious direct file extensions
+                if href.startswith(MAGNET_PREFIX) or any(href.endswith(ext) for ext in SUSPICIOUS_EXTS):
+                    suspicious_links.append(href)
+                # Check for buttons/links that aggressively say "download" alongside piracy terms
+                elif 'download' in text and any(kw in text for kw in ['torrent', 'magnet', 'crack', 'free', 'hd']):
+                    suspicious_links.append(href)
+
+            if len(suspicious_links) >= MIN_SUSPICIOUS_LINKS:
+                # Strong signal: actual distribution of suspicious files/magnets found
+                risk_score += 0.50
+                reasons.append(f"{len(suspicious_links)} suspicious download/torrent links detected")
+                
+            # Detect heavy use of obfuscated or external iframes (common in streaming/piracy)
+            iframes = soup.find_all('iframe')
+            external_iframes = 0
+            for iframe in iframes:
+                src = iframe.get('src', '')
+                if src and src.startswith('http') and parsed_url.netloc not in src:
+                    external_iframes += 1
+            
+            if external_iframes >= 4:
+                risk_score += 0.20
+                reasons.append("High number of external iframes (common in illegal streaming)")
+
+        except Exception as e:
+            logger.debug(f"HTML parsing error in piracy detector: {e}")
+
     final_score = min(1.0, risk_score)
-    category = "PIRACY" if final_score > 0.0 else "SAFE"
-    
-    result = {
-        "category": category,
-        "risk_score": final_score,
-        "reasons": list(set(reasons))  # Remove duplicate reasons
-    }
-    
     if final_score > 0:
-        logger.info(f"Piracy risk for {url}: {final_score:.2f} | Reasons: {result['reasons']}")
-        
-    return result
+        logger.info(f"Dynamic Piracy risk {final_score:.2f} for {url} | {reasons}")
+
+    return {"risk_score": final_score, "reasons": reasons}

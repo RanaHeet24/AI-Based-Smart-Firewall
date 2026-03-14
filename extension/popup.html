@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Smart Firewall</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            width: 320px;
+            background: #0d1117;
+            color: #e6edf3;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a2535 0%, #0d1117 100%);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #30363d;
+        }
+        .header h1 { font-size: 15px; font-weight: 600; }
+        .header p { font-size: 11px; color: #8b949e; }
+        .shield { font-size: 28px; }
+        .content { padding: 16px 20px; }
+        .status-card {
+            background: #161b22;
+            border-radius: 10px;
+            padding: 14px;
+            border: 1px solid #30363d;
+            margin-bottom: 12px;
+        }
+        .status-label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+        .decision { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .decision.ALLOW { color: #3fb950; }
+        .decision.WARN  { color: #d29922; }
+        .decision.BLOCK { color: #ff7b72; }
+        .score-bar-bg { background: #30363d; border-radius: 4px; height: 6px; margin-top: 10px; }
+        .score-bar { height: 6px; border-radius: 4px; transition: width 0.5s ease; }
+        .score-bar.ALLOW { background: #3fb950; }
+        .score-bar.WARN  { background: #d29922; }
+        .score-bar.BLOCK { background: #ff7b72; }
+        .url-box {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 11px;
+            color: #8b949e;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+        .no-data { text-align: center; color: #8b949e; font-size: 13px; padding: 20px 0; }
+        .footer { padding: 10px 20px; font-size: 10px; color: #484f58; text-align: center; border-top: 1px solid #21262d; }
+        .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #3fb950; margin-right: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="shield">🛡️</div>
+        <div>
+            <h1>AI Smart Firewall</h1>
+            <p><span class="status-dot"></span>Protection Active</p>
+        </div>
+    </div>
+    <div class="content">
+        <div id="result-area">
+            <p class="no-data">Browse a website to see the firewall analysis.</p>
+        </div>
+    </div>
+    <div class="footer">AI Smart Firewall &mdash; Predictive Cyber Protection</div>
+    <script src="popup.js"></script>
+</body>
+</html>
