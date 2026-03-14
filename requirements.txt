@@ -10,3 +10,4 @@ python-whois
 beautifulsoup4
 plotly
 flask-cors
+gunicorn
