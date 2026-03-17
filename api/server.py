@@ -14,6 +14,17 @@ CORS(app)  # Allow extension to call this API
 logger = setup_logger("APIServer", "api_server.log")
 
 
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({
+        "message": "🛡️ AI Smart Firewall API is running!",
+        "endpoints": {
+            "health": "GET /health",
+            "check_url": "POST /check-url"
+        }
+    })
+
+
 @app.route("/check-url", methods=["POST"])
 def analyze_url():
     """
@@ -57,7 +68,5 @@ def health():
 
 
 if __name__ == "__main__":
-    # Render provides the PORT as an environment variable
-    port = int(os.environ.get("PORT", 5000))
-    # Must listen on 0.0.0.0 for Render to detect the port
-    app.run(host="0.0.0.0", port=port, debug=False)
+    # Runs on internal port 5000 (Streamlit takes the public Render PORT)
+    app.run(host="0.0.0.0", port=5000, debug=False)

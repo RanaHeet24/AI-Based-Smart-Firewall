@@ -22,7 +22,7 @@ function getDecisionText(decision) {
 document.addEventListener("DOMContentLoaded", () => {
     const area = document.getElementById("result-area");
 
-    chrome.storage.session.get("lastResult", (data) => {
+    chrome.storage.local.get("lastResult", (data) => {
         const r = data.lastResult;
         if (!r) {
             area.innerHTML = `<p class="no-data">Browse a website to see the firewall analysis.</p>`;
